@@ -13,18 +13,19 @@
 1. [Overview](#overview)
 2. [Installation](#installation)
 3. [Quick Start](#quick-start)
-4. [API Documentation](#api-documentation)
+4. [Thread Safety](#thread-safety)
+5. [API Documentation](#api-documentation)
    - [encoding/json Compatible API](#encodingjson-compatible-api)
    - [Fluent DOM API (Recommended)](#fluent-dom-api-recommended)
    - [JSON Validation](#json-validation)
    - [Streaming Parser](#streaming-parser)
    - [Low-Level AST API](#low-level-ast-api)
-5. [JSONPath Query Engine](#jsonpath-query-engine)
-6. [Performance & Benchmarks](#performance--benchmarks)
-7. [Architecture](#architecture)
-8. [Testing & Quality](#testing--quality)
-9. [Examples](#examples)
-10. [Migration Guide](#migration-guide)
+6. [JSONPath Query Engine](#jsonpath-query-engine)
+7. [Performance & Benchmarks](#performance--benchmarks)
+8. [Architecture](#architecture)
+9. [Testing & Quality](#testing--quality)
+10. [Examples](#examples)
+11. [Migration Guide](#migration-guide)
 
 ---
 
@@ -157,6 +158,88 @@ emptyArr := result["emptyArray"].([]interface{})   // ✅ []interface{}
 emptyObj := result["emptyObject"].(map[string]interface{}) // ✅ map[string]interface{}
 // Full round-trip fidelity - no type information lost!
 ```
+
+---
+
+## Thread Safety
+
+**shape-json is fully thread-safe.** All public APIs can be safely called concurrently from multiple goroutines without external synchronization.
+
+### Concurrency Guarantees
+
+All parsing, marshaling, and validation functions are safe for concurrent use:
+
+```go
+// ✅ SAFE: Multiple goroutines unmarshaling concurrently
+func processRequests(requests [][]byte) {
+    var wg sync.WaitGroup
+    for _, data := range requests {
+        wg.Add(1)
+        go func(d []byte) {
+            defer wg.Done()
+            var v interface{}
+            json.Unmarshal(d, &v) // Thread-safe
+        }(data)
+    }
+    wg.Wait()
+}
+
+// ✅ SAFE: Concurrent parsing
+go func() { json.Parse(input1) }()
+go func() { json.Parse(input2) }()
+go func() { json.Parse(input3) }()
+
+// ✅ SAFE: Concurrent validation
+go func() { json.Validate(data1) }()
+go func() { json.Validate(data2) }()
+```
+
+### Implementation Details
+
+- **No shared mutable state** - Each function call creates its own parser instance
+- **Thread-safe buffer pools** - Uses `sync.Pool` for efficient memory reuse
+- **Race detector verified** - All tests pass with `go test -race`
+- **Lock-free operations** - No mutexes needed for public APIs
+
+### Thread-Safe APIs
+
+| API | Thread-Safe | Notes |
+|-----|-------------|-------|
+| `Unmarshal()` | ✅ Yes | Creates new parser per call |
+| `Marshal()` | ✅ Yes | Uses thread-safe buffer pool |
+| `Parse()` | ✅ Yes | Creates new parser per call |
+| `ParseReader()` | ✅ Yes | Creates new parser per call |
+| `Validate()` | ✅ Yes | Creates new parser per call |
+| `NewDecoder()` | ✅ Yes | Factory function, thread-safe |
+| `NewEncoder()` | ✅ Yes | Factory function, thread-safe |
+| `Decoder.Decode()` | ⚠️ Instance | Don't share decoder instances between goroutines |
+| `Encoder.Encode()` | ⚠️ Instance | Don't share encoder instances between goroutines |
+
+### Best Practices
+
+**✅ Do:**
+```go
+// Create new instances per goroutine
+go func() {
+    decoder := json.NewDecoder(reader1)
+    decoder.Decode(&v1)
+}()
+
+go func() {
+    decoder := json.NewDecoder(reader2)
+    decoder.Decode(&v2)
+}()
+```
+
+**❌ Don't:**
+```go
+// DON'T share decoder/encoder instances
+decoder := json.NewDecoder(reader)
+go func() { decoder.Decode(&v1) }() // Race condition!
+go func() { decoder.Decode(&v2) }() // Race condition!
+```
+
+This matches `encoding/json`'s thread safety model exactly - the package-level functions are safe, but instances should not be shared between goroutines.
 
 ---
 

@@ -369,6 +369,39 @@ Object = "{" [ Member { "," Member } ] "}" ;
 Array = "[" [ Value { "," Value } ] "]" ;
 ```
 
+## Thread Safety
+
+**shape-json is thread-safe.** All public APIs can be called concurrently from multiple goroutines without external synchronization.
+
+### Safe for Concurrent Use
+
+```go
+// ✅ SAFE: Multiple goroutines can call these concurrently
+go func() {
+    var v1 interface{}
+    json.Unmarshal(data1, &v1)
+}()
+
+go func() {
+    var v2 interface{}
+    json.Unmarshal(data2, &v2)
+}()
+
+// ✅ SAFE: Parse, Marshal, Validate all create new instances
+go func() { json.Parse(input1) }()
+go func() { json.Marshal(obj1) }()
+go func() { json.Validate(input2) }()
+```
+
+### Thread Safety Guarantees
+
+- **`Unmarshal()`, `Marshal()`** - Thread-safe, use internal buffer pools
+- **`Parse()`, `Validate()`** - Thread-safe, create new parser instances
+- **`NewDecoder()`, `NewEncoder()`** - Thread-safe factory functions
+- **Race detector verified** - All tests pass with `go test -race`
+
+This matches `encoding/json`'s thread safety guarantees.
+
 ## Testing
 
 shape-json has comprehensive test coverage including unit tests, fuzzing, and grammar verification.

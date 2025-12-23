@@ -8,6 +8,18 @@
 // This parser uses LL(1) recursive descent parsing (see Shape ADR 0004).
 // Each production rule in the grammar corresponds to a parse function in internal/parser/parser.go.
 //
+// # Thread Safety
+//
+// All functions in this package are safe for concurrent use by multiple goroutines.
+// Each function call creates its own parser instance with no shared mutable state.
+//
+//	// ✅ SAFE: Concurrent parsing
+//	go func() { json.Parse(input1) }()
+//	go func() { json.Parse(input2) }()
+//	go func() { json.Unmarshal(data, &v) }()
+//
+// This matches encoding/json's thread safety guarantees.
+//
 // # Parsing APIs
 //
 // The package provides two parsing functions:
