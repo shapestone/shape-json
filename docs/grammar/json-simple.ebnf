@@ -1,0 +1,38 @@
+// Simplified JSON Grammar for Shape Grammar Verification
+// This is a simplified version of the full JSON grammar that uses only
+// basic character class syntax supported by Shape's grammar parser.
+//
+// For the complete, RFC 8259 compliant grammar with advanced character classes,
+// negation, and escape sequences, see json.ebnf
+//
+// This simplified grammar is used for ADR 0005 grammar verification tests.
+
+// Top-level JSON value
+Value = Object | Array | String | Number | Boolean | Null ;
+
+// Object: zero or more key-value pairs
+Object = "{" [ Member { "," Member } ] "}" ;
+
+// Object member (key-value pair)
+Member = String ":" Value ;
+
+// Array: zero or more values
+Array = "[" [ Value { "," Value } ] "]" ;
+
+// String: quoted text (simplified - basic character set only)
+// Full grammar with full Unicode and escape sequences is in json.ebnf
+String = "\"" [ StringChar ] "\"" ;
+
+// String characters (simplified: letters, digits, spaces, basic punctuation)
+// Full grammar supports all Unicode and escape sequences
+StringChar = [a-zA-Z0-9 _.,!?:;-]+ ;
+
+// Number: integer or float (simplified)
+// Full grammar in json.ebnf supports full JSON number format
+Number = [ "-" ] ( "0" | [1-9][0-9]* ) [ "." [0-9]+ ] [ ( "e" | "E" ) [ "+" | "-" ] [0-9]+ ] ;
+
+// Boolean: true or false
+Boolean = "true" | "false" ;
+
+// Null: null value
+Null = "null" ;

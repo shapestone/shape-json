@@ -1,0 +1,5 @@
+# Benchmark history files are large and change frequently
+# Only commit the directory structure and README
+*
+!.gitignore
+!README.md

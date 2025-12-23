@@ -1,0 +1,120 @@
+// JSON Grammar Specification (RFC 8259)
+// This grammar defines the JSON data format.
+//
+// Implementation Guide:
+// - Use LL(1) recursive descent parsing (see Shape ADR 0004)
+// - Each production rule becomes a parse function
+// - Return appropriate ast.SchemaNode types (LiteralNode for JSON data)
+// - Provide context-aware error messages
+// - JSON is a data format, not a validation format
+//
+// Key difference from JSONV:
+// - JSON uses literal values: {"name": "Alice", "age": 30}
+// - JSONV uses type references: {"name": String, "age": Integer}
+// - All JSON nodes are represented as ast.LiteralNode or structural nodes (ObjectNode, ArrayNode)
+
+// Top-level JSON value
+// Parser function: Parse() -> ast.SchemaNode
+// Can be object, array, string, number, boolean, or null
+Value = Object | Array | String | Number | Boolean | Null ;
+
+// Object: zero or more key-value pairs
+// Parser function: parseObject() -> *ast.ObjectNode
+// Example valid: {}
+// Example valid: {"name": "Alice"}
+// Example valid: {"id": 123, "active": true, "tags": ["go", "json"]}
+// Example invalid: {name: "Alice"} (keys must be quoted)
+// Example invalid: {"trailing": "comma",} (trailing commas not allowed)
+// Returns: ast.NewObjectNode(properties map[string]ast.SchemaNode, position)
+Object = "{" [ Member { "," Member } ] "}" ;
+
+// Object member (key-value pair)
+// Parser function: parseMember() -> (key string, value ast.SchemaNode)
+// Key must be a string, value can be any JSON value
+Member = String ":" Value ;
+
+// Array: zero or more values
+// Parser function: parseArray() -> *ast.ArrayNode
+// Example valid: []
+// Example valid: [1, 2, 3]
+// Example valid: [{"id": 1}, {"id": 2}]
+// Example invalid: [1, 2, 3,] (trailing commas not allowed)
+// Returns: ast.NewArrayNode(elementSchema, position)
+// Note: For JSON data, ArrayNode contains a single representative element
+Array = "[" [ Value { "," Value } ] "]" ;
+
+// String: quoted text with escape sequences
+// Parser function: parseString() -> *ast.LiteralNode
+// Supports Unicode and escape sequences: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+// Example valid: ""
+// Example valid: "hello world"
+// Example valid: "line1\nline2"
+// Example valid: "unicode: \u03B1\u03B2\u03B3"
+// Example invalid: "unterminated
+// Example invalid: 'single quotes' (must use double quotes)
+// Returns: ast.NewLiteralNode(string_value, position)
+String = '"' { Character } '"' ;
+
+// Character in string
+// Can be any Unicode character except " and \, or an escape sequence
+Character = UnescapedChar | EscapeSequence ;
+
+// Unescaped character (any char except " \ and control chars)
+UnescapedChar = [^"\\\x00-\x1F] ;
+
+// Escape sequences
+// \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+EscapeSequence = "\\" ( '"' | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | UnicodeEscape ) ;
+
+// Unicode escape: \uXXXX (4 hex digits)
+UnicodeEscape = "u" HexDigit HexDigit HexDigit HexDigit ;
+
+// Hex digit
+HexDigit = [0-9a-fA-F] ;
+
+// Number: integer or floating point
+// Parser function: parseNumber() -> *ast.LiteralNode
+// Supports: 42, -17, 3.14, -0.5, 1.23e10, 1.23e-10, 1.23E+10
+// Example valid: 0
+// Example valid: -123
+// Example valid: 123.456
+// Example valid: 1e10
+// Example valid: 1.5e-3
+// Example invalid: 01 (leading zeros not allowed except for 0 itself)
+// Example invalid: .5 (must have digit before decimal)
+// Example invalid: 1. (must have digit after decimal)
+// Returns: ast.NewLiteralNode(int64 or float64, position)
+Number = [ "-" ] Integer [ Fraction ] [ Exponent ] ;
+
+// Integer part: 0 or digits 1-9 followed by more digits
+Integer = "0" | ( [1-9] { Digit } ) ;
+
+// Digit
+Digit = [0-9] ;
+
+// Fraction: decimal point followed by digits
+Fraction = "." Digit+ ;
+
+// Exponent: e or E, optional sign, digits
+Exponent = ( "e" | "E" ) [ "+" | "-" ] Digit+ ;
+
+// Boolean: true or false
+// Parser function: parseBoolean() -> *ast.LiteralNode
+// Example valid: true
+// Example valid: false
+// Example invalid: True (case-sensitive, must be lowercase)
+// Example invalid: TRUE
+// Returns: ast.NewLiteralNode(bool, position)
+Boolean = "true" | "false" ;
+
+// Null: null value
+// Parser function: parseNull() -> *ast.LiteralNode
+// Example valid: null
+// Example invalid: NULL (case-sensitive, must be lowercase)
+// Example invalid: nil
+// Returns: ast.NewLiteralNode(nil, position)
+Null = "null" ;
+
+// Whitespace (automatically consumed by tokenizer)
+// Space, tab, line feed, carriage return
+Whitespace = { " " | "\t" | "\n" | "\r" } ;

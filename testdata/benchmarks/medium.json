@@ -1,0 +1,193 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "timestamp": "2025-01-15T10:30:00Z",
+    "source": "benchmark-test",
+    "generator": "shape-json-benchmarks"
+  },
+  "users": [
+    {
+      "id": 1,
+      "username": "alice_wonder",
+      "email": "alice@example.com",
+      "profile": {
+        "firstName": "Alice",
+        "lastName": "Wonder",
+        "age": 30,
+        "location": {
+          "city": "San Francisco",
+          "state": "CA",
+          "country": "USA",
+          "coordinates": {
+            "latitude": 37.7749,
+            "longitude": -122.4194
+          }
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "newsletter": false,
+        "theme": "dark"
+      },
+      "scores": [95.5, 87.3, 92.1, 88.7, 91.5]
+    },
+    {
+      "id": 2,
+      "username": "bob_builder",
+      "email": "bob@example.com",
+      "profile": {
+        "firstName": "Bob",
+        "lastName": "Builder",
+        "age": 35,
+        "location": {
+          "city": "New York",
+          "state": "NY",
+          "country": "USA",
+          "coordinates": {
+            "latitude": 40.7128,
+            "longitude": -74.0060
+          }
+        }
+      },
+      "preferences": {
+        "notifications": false,
+        "newsletter": true,
+        "theme": "light"
+      },
+      "scores": [78.2, 82.5, 85.1, 79.8, 81.3]
+    },
+    {
+      "id": 3,
+      "username": "charlie_chaplin",
+      "email": "charlie@example.com",
+      "profile": {
+        "firstName": "Charlie",
+        "lastName": "Chaplin",
+        "age": 28,
+        "location": {
+          "city": "London",
+          "state": null,
+          "country": "UK",
+          "coordinates": {
+            "latitude": 51.5074,
+            "longitude": -0.1278
+          }
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "newsletter": true,
+        "theme": "auto"
+      },
+      "scores": [92.3, 94.7, 91.2, 93.5, 95.8]
+    },
+    {
+      "id": 4,
+      "username": "diana_prince",
+      "email": "diana@example.com",
+      "profile": {
+        "firstName": "Diana",
+        "lastName": "Prince",
+        "age": 32,
+        "location": {
+          "city": "Tokyo",
+          "state": null,
+          "country": "Japan",
+          "coordinates": {
+            "latitude": 35.6762,
+            "longitude": 139.6503
+          }
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "newsletter": false,
+        "theme": "dark"
+      },
+      "scores": [88.5, 89.3, 90.1, 87.7, 91.2]
+    },
+    {
+      "id": 5,
+      "username": "ethan_hunt",
+      "email": "ethan@example.com",
+      "profile": {
+        "firstName": "Ethan",
+        "lastName": "Hunt",
+        "age": 40,
+        "location": {
+          "city": "Sydney",
+          "state": "NSW",
+          "country": "Australia",
+          "coordinates": {
+            "latitude": -33.8688,
+            "longitude": 151.2093
+          }
+        }
+      },
+      "preferences": {
+        "notifications": false,
+        "newsletter": false,
+        "theme": "light"
+      },
+      "scores": [85.1, 86.4, 84.8, 87.2, 85.9]
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-001",
+      "name": "Wireless Headphones",
+      "category": "Electronics",
+      "price": 199.99,
+      "inStock": true,
+      "tags": ["audio", "wireless", "bluetooth"],
+      "ratings": [4.5, 5.0, 4.8, 4.7, 5.0, 4.9]
+    },
+    {
+      "id": "prod-002",
+      "name": "Smart Watch",
+      "category": "Electronics",
+      "price": 299.99,
+      "inStock": true,
+      "tags": ["wearable", "fitness", "smart"],
+      "ratings": [4.2, 4.5, 4.3, 4.6, 4.4]
+    },
+    {
+      "id": "prod-003",
+      "name": "Running Shoes",
+      "category": "Sports",
+      "price": 129.99,
+      "inStock": false,
+      "tags": ["footwear", "running", "athletic"],
+      "ratings": [4.8, 4.9, 5.0, 4.7, 4.8, 4.9, 5.0]
+    },
+    {
+      "id": "prod-004",
+      "name": "Coffee Maker",
+      "category": "Home",
+      "price": 89.99,
+      "inStock": true,
+      "tags": ["kitchen", "appliance", "coffee"],
+      "ratings": [4.0, 4.2, 4.1, 4.3, 4.0, 4.2]
+    },
+    {
+      "id": "prod-005",
+      "name": "Yoga Mat",
+      "category": "Sports",
+      "price": 39.99,
+      "inStock": true,
+      "tags": ["fitness", "yoga", "exercise"],
+      "ratings": [4.6, 4.7, 4.8, 4.5, 4.7]
+    }
+  ],
+  "analytics": {
+    "totalUsers": 5,
+    "totalProducts": 5,
+    "averageAge": 33.0,
+    "topCountries": ["USA", "UK", "Japan", "Australia"],
+    "categoryDistribution": {
+      "Electronics": 2,
+      "Sports": 2,
+      "Home": 1
+    }
+  }
+}
