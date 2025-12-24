@@ -1,6 +1,6 @@
 module github.com/shapestone/shape-json
 
-go 1.25
+go 1.23
 
 replace github.com/shapestone/shape-core => ../shape-core
 

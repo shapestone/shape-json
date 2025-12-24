@@ -123,7 +123,7 @@ func TestParseNumber(t *testing.T) {
 		{
 			name:  "exponent uppercase",
 			input: "1E10",
-			want:  1E10,
+			want:  1e10,
 		},
 		{
 			name:  "decimal with exponent",

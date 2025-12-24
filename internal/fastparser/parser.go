@@ -383,6 +383,7 @@ func (p *Parser) parseTrue() (bool, error) {
 }
 
 // parseFalse parses the literal "false".
+// nolint:unparam // Returns false by design - parses the "false" literal
 func (p *Parser) parseFalse() (bool, error) {
 	if p.pos+5 <= p.length && string(p.data[p.pos:p.pos+5]) == "false" {
 		p.pos += 5
