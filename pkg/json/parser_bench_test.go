@@ -298,6 +298,7 @@ func BenchmarkEncodingJSON_Decoder_Large(b *testing.B) {
 		_ = v
 	}
 }
+
 // ================================
 // Dual-Path Comparison Benchmarks
 // ================================
