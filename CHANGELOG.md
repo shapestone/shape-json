@@ -5,6 +5,25 @@ All notable changes to the shape-json project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-12-24
+
+### Added
+- **Thread Safety Documentation**: Comprehensive documentation of thread safety guarantees
+  - New "Thread Safety" section in README.md with concurrent usage examples
+  - Detailed thread safety chapter in USER_GUIDE.md with API table and best practices
+  - Package-level godoc documentation on concurrent use in pkg/json/parser.go
+  - All public APIs documented as thread-safe (Unmarshal, Marshal, Parse, Validate, etc.)
+  - Warning about sharing Decoder/Encoder instances (matches encoding/json behavior)
+
+### Changed
+- **Go Version**: Standardized to Go 1.23 across Shape ecosystem
+  - Updated go.mod from 1.25 to 1.23 for GitHub Actions compatibility
+  - Updated CI workflow to use actions/setup-go@v5 with Go 1.23
+  - Aligned with [Shape Go Version Policy](https://github.com/shapestone/shape-core/blob/main/docs/policies/GO_VERSION.md)
+
+### Fixed
+- CI lint issues: Applied gofmt and added nolint annotation for parseFalse function
+
 ## [0.9.0] - 2025-12-22
 
 ### Initial Release
