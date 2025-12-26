@@ -14,6 +14,8 @@
 
 **Repository:** github.com/shapestone/shape-json
 
+Part of the [Shape Parser™](https://github.com/shapestone/shape) ecosystem.
+
 A JSON parser for the Shape Parser™ ecosystem.
 
 Parses JSON data (RFC 8259) into Shape Parser's™ unified AST representation.
