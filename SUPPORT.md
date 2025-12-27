@@ -215,7 +215,7 @@ All interactions in the shape-json community (issues, discussions, PRs) are gove
 - Publishing others' private information
 - Other conduct inappropriate in a professional setting
 
-To report violations, contact: conduct@shapestone.dev
+To report violations, contact: conduct@shapestone.com
 
 ---
 
