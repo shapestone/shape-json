@@ -13,7 +13,7 @@ Thank you for your interest in contributing to Shape! This document provides gui
 
 ## Code of Conduct
 
-This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to conduct@shapestone.dev.
+This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to conduct@shapestone.com.
 
 ## Format Addition Policy
 
