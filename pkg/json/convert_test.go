@@ -9,9 +9,9 @@ import (
 // TestNodeToInterface_LiteralNode tests conversion of literal nodes
 func TestNodeToInterface_LiteralNode(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		check    func(t *testing.T, result interface{})
+		name  string
+		input string
+		check func(t *testing.T, result interface{})
 	}{
 		{
 			name:  "string literal",

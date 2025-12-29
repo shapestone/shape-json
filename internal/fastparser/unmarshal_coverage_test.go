@@ -318,16 +318,16 @@ func TestUnmarshalObject_EdgeCases(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:   "object with JSON tag '-'",
-			input:  `{"name": "Alice", "ignored": "value"}`,
+			name:  "object with JSON tag '-'",
+			input: `{"name": "Alice", "ignored": "value"}`,
 			target: &struct {
 				Name    string
 				Ignored string `json:"-"`
 			}{},
 		},
 		{
-			name:   "object with comma in tag",
-			input:  `{"custom_name": "Alice"}`,
+			name:  "object with comma in tag",
+			input: `{"custom_name": "Alice"}`,
 			target: &struct {
 				Name string `json:"custom_name,omitempty"`
 			}{},

@@ -360,7 +360,7 @@ func TestArray_ToSlice_Modification(t *testing.T) {
 	arr := NewArray().AddString("original")
 
 	slice := arr.ToSlice()
-	slice = append(slice, "new")
+	_ = append(slice, "new") // intentionally not using result to test isolation
 
 	// The original array should not be affected by append
 	if arr.Len() != 1 {

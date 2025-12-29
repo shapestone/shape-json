@@ -39,8 +39,8 @@ func TestUnmarshalWithAST(t *testing.T) {
 			},
 		},
 		{
-			name:   "struct",
-			json:   `{"Name": "Bob", "Age": 25}`,
+			name: "struct",
+			json: `{"Name": "Bob", "Age": 25}`,
 			target: new(struct {
 				Name string
 				Age  int
@@ -415,9 +415,9 @@ func TestUnmarshalValue_AllBranches(t *testing.T) {
 			target: new(*int),
 		},
 		{
-			name:    "unsupported node type",
-			json:    `42`,
-			target:  new(int),
+			name:   "unsupported node type",
+			json:   `42`,
+			target: new(int),
 		},
 	}
 
@@ -440,8 +440,8 @@ func TestUnmarshalObject_AllBranches(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "object to struct",
-			json:   `{"Name": "Alice", "Age": 30}`,
+			name: "object to struct",
+			json: `{"Name": "Alice", "Age": 30}`,
 			target: new(struct {
 				Name string
 				Age  int
