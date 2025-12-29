@@ -47,7 +47,7 @@ jobs:
 
       - name: Run tests
         working-directory: shape-json
-        run: go test -v -race -coverprofile=coverage.out ./internal/... ./pkg/...
+        run: go test -v -race -coverprofile=coverage.out -coverpkg=./... ./internal/... ./pkg/...
 
       - name: Check coverage
         working-directory: shape-json
