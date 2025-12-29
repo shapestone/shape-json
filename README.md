@@ -14,9 +14,7 @@
 
 **Repository:** github.com/shapestone/shape-json
 
-Part of the [Shape Parser™](https://github.com/shapestone/shape) ecosystem.
-
-A JSON parser for the Shape Parser™ ecosystem.
+A JSON parser for the [Shape Parser™](https://github.com/shapestone/shape) ecosystem.
 
 Parses JSON data (RFC 8259) into Shape Parser's™ unified AST representation.
 
@@ -200,7 +198,7 @@ name := nameNode.(*ast.LiteralNode).Value().(string)  // "Alice"
 - **Shape AST Integration**: Returns unified AST nodes for advanced use cases
 - **JSONPath Query Engine**: RFC 9535-compliant JSONPath implementation (see [pkg/jsonpath](pkg/jsonpath/README.md))
 - **Comprehensive Error Messages**: Context-aware error reporting
-- **High Test Coverage**: 84.2% JSON API, 97.1% parser, 98.8% tokenizer, 89.8% JSONPath
+- **High Test Coverage**: 91.0% JSON API, 90.2% fastparser, 92.2% parser, 69.9% tokenizer, 89.8% JSONPath
 - **Zero External Dependencies** (except Shape infrastructure)
 - **Architectural Purity**: Single unified parser - no encoding/json dependency
 
@@ -409,11 +407,12 @@ This matches `encoding/json`'s thread safety guarantees.
 shape-json has comprehensive test coverage including unit tests, fuzzing, and grammar verification.
 
 ### Coverage Summary
-- Parser: 97.1% ✅
-- Tokenizer: 98.8% ✅
+- Fast Parser: 90.2% ✅
+- Parser: 92.2% ✅
+- Tokenizer: 69.9% ✅
 - JSONPath: 89.8% ✅
-- JSON API: 84.2% ✅
-- **Overall Library**: **84%+** ✅
+- JSON API: 91.0% ✅
+- **Overall Library**: **85.84%** ✅
 
 ### Quick Start
 
