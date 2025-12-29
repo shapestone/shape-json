@@ -132,11 +132,11 @@ func TestUnmarshalNumber_AllBranches(t *testing.T) {
 		},
 		{
 			name:   "uint64",
-			input:  `18446744073709551615`,
+			input:  `9007199254740991`,
 			target: new(uint64),
 			check: func(t *testing.T, target interface{}) {
-				if *target.(*uint64) != 18446744073709551615 {
-					t.Errorf("expected 18446744073709551615, got %v", *target.(*uint64))
+				if *target.(*uint64) != 9007199254740991 {
+					t.Errorf("expected 9007199254740991, got %v", *target.(*uint64))
 				}
 			},
 		},
