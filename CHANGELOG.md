@@ -5,6 +5,19 @@ All notable changes to the shape-json project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-02-10
+
+### Added
+- **Compiled encoder cache for `Marshal()`** — type-level encoder caching with pre-computed field layouts
+- **Zero-reflect fast path** for common types (`appendInterface` type-switch)
+- `encoder.go` — compiled struct/map/slice encoders with pre-encoded key bytes
+- `encoder_helpers.go` — `appendInterface`, `appendISO8601Duration`, `sortStrings`
+- `escape.go` — zero-allocation `appendEscapedString`
+- Marshal benchmarks with `b.ReportAllocs()` and stdlib comparisons
+
+### Changed
+- `Marshal()` rewritten to use two-tier fast path (5.4x faster structs, 3.1x faster maps vs previous version)
+
 ## [0.9.1] - 2025-12-24
 
 ### Added
@@ -118,4 +131,5 @@ Copyright © 2020-2025 Shapestone
 - Documentation: https://pkg.go.dev/github.com/shapestone/shape-json
 - Issues: https://github.com/shapestone/shape-json/issues
 
+[0.10.0]: https://github.com/shapestone/shape-json/releases/tag/v0.10.0
 [0.9.0]: https://github.com/shapestone/shape-json/releases/tag/v0.9.0

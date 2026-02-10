@@ -2,12 +2,17 @@ package json
 
 import (
 	"bytes"
-	"fmt"
 	"reflect"
-	"sort"
-	"strconv"
 	"sync"
 )
+
+// bufPool pools []byte slices for the compiled-encoder fast path.
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		b := make([]byte, 0, 1024)
+		return &b
+	},
+}
 
 // bufferPool is a pool of bytes.Buffer instances to reduce allocations during marshaling.
 // Buffers are returned to the pool after use to minimize GC pressure.
@@ -80,269 +85,58 @@ func putBuffer(buf *bytes.Buffer) {
 // JSON cannot represent cyclic data structures and Marshal does not handle them.
 // Passing cyclic structures to Marshal will result in an error.
 func Marshal(v interface{}) ([]byte, error) {
-	buf := getBuffer()
-	defer putBuffer(buf)
+	if v == nil {
+		return []byte("null"), nil
+	}
 
-	if err := marshalValue(reflect.ValueOf(v), buf, false); err != nil {
+	// Fast path: try the type-switch encoder first (no reflect at all)
+	bp := bufPool.Get().(*[]byte)
+	buf := (*bp)[:0]
+
+	buf, err := appendInterface(buf, v)
+	if err == nil {
+		// Success — copy result so pooled buffer can be reused
+		result := make([]byte, len(buf))
+		copy(result, buf)
+		*bp = buf
+		bufPool.Put(bp)
+		return result, nil
+	}
+
+	if err != errNeedReflect {
+		// Real error from appendInterface (e.g. Marshaler failed)
+		*bp = buf
+		bufPool.Put(bp)
 		return nil, err
 	}
 
-	// Must copy since buffer will be returned to pool
-	result := make([]byte, buf.Len())
-	copy(result, buf.Bytes())
+	// Fall back to the compiled encoder cache
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			*bp = buf
+			bufPool.Put(bp)
+			return []byte("null"), nil
+		}
+		rv = rv.Elem()
+	}
+
+	enc := encoderForType(rv.Type())
+	buf, err = enc(buf, rv)
+	if err != nil {
+		*bp = buf
+		bufPool.Put(bp)
+		return nil, err
+	}
+
+	result := make([]byte, len(buf))
+	copy(result, buf)
+	*bp = buf
+	bufPool.Put(bp)
 	return result, nil
 }
 
 // Marshaler is the interface implemented by types that can marshal themselves into valid JSON.
 type Marshaler interface {
 	MarshalJSON() ([]byte, error)
-}
-
-// marshalValue marshals a reflect.Value to a buffer
-func marshalValue(rv reflect.Value, buf *bytes.Buffer, asString bool) error {
-	// Handle invalid values
-	if !rv.IsValid() {
-		buf.WriteString("null")
-		return nil
-	}
-
-	// Handle nil interface
-	if rv.Kind() == reflect.Interface && rv.IsNil() {
-		buf.WriteString("null")
-		return nil
-	}
-
-	// Check if type implements Marshaler interface
-	if rv.Type().Implements(reflect.TypeOf((*Marshaler)(nil)).Elem()) {
-		marshaler := rv.Interface().(Marshaler)
-		b, err := marshaler.MarshalJSON()
-		if err != nil {
-			return err
-		}
-		buf.Write(b)
-		return nil
-	}
-
-	// Dereference interface
-	if rv.Kind() == reflect.Interface {
-		return marshalValue(rv.Elem(), buf, asString)
-	}
-
-	// Handle pointers
-	if rv.Kind() == reflect.Ptr {
-		if rv.IsNil() {
-			buf.WriteString("null")
-			return nil
-		}
-		return marshalValue(rv.Elem(), buf, asString)
-	}
-
-	// If asString is true, marshal numbers and bools as strings
-	if asString {
-		switch rv.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			buf.WriteString(`"`)
-			buf.WriteString(strconv.FormatInt(rv.Int(), 10))
-			buf.WriteString(`"`)
-			return nil
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			buf.WriteString(`"`)
-			buf.WriteString(strconv.FormatUint(rv.Uint(), 10))
-			buf.WriteString(`"`)
-			return nil
-		case reflect.Float32, reflect.Float64:
-			buf.WriteString(`"`)
-			buf.WriteString(strconv.FormatFloat(rv.Float(), 'g', -1, 64))
-			buf.WriteString(`"`)
-			return nil
-		case reflect.Bool:
-			buf.WriteString(`"`)
-			buf.WriteString(strconv.FormatBool(rv.Bool()))
-			buf.WriteString(`"`)
-			return nil
-		}
-	}
-
-	switch rv.Kind() {
-	case reflect.String:
-		return marshalString(rv.String(), buf)
-
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		buf.WriteString(strconv.FormatInt(rv.Int(), 10))
-		return nil
-
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		buf.WriteString(strconv.FormatUint(rv.Uint(), 10))
-		return nil
-
-	case reflect.Float32, reflect.Float64:
-		buf.WriteString(strconv.FormatFloat(rv.Float(), 'g', -1, 64))
-		return nil
-
-	case reflect.Bool:
-		buf.WriteString(strconv.FormatBool(rv.Bool()))
-		return nil
-
-	case reflect.Struct:
-		return marshalStruct(rv, buf)
-
-	case reflect.Map:
-		return marshalMap(rv, buf)
-
-	case reflect.Slice, reflect.Array:
-		return marshalSlice(rv, buf)
-
-	default:
-		return fmt.Errorf("json: unsupported type %s", rv.Type())
-	}
-}
-
-// marshalString marshals a string with proper JSON escaping
-func marshalString(s string, buf *bytes.Buffer) error {
-	buf.WriteString(`"`)
-	buf.WriteString(escapeString(s))
-	buf.WriteString(`"`)
-	return nil
-}
-
-// marshalStruct marshals a struct to JSON
-func marshalStruct(rv reflect.Value, buf *bytes.Buffer) error {
-	structType := rv.Type()
-
-	// Collect fields with their info and values
-	type fieldEntry struct {
-		name     string
-		value    reflect.Value
-		asString bool
-	}
-
-	var fields []fieldEntry
-
-	for i := 0; i < structType.NumField(); i++ {
-		field := structType.Field(i)
-
-		// Skip unexported fields
-		if field.PkgPath != "" {
-			continue
-		}
-
-		info := getFieldInfo(field)
-
-		// Skip fields with "-" tag
-		if info.skip {
-			continue
-		}
-
-		fieldVal := rv.Field(i)
-
-		// Handle omitempty
-		if info.omitEmpty && isEmptyValue(fieldVal) {
-			continue
-		}
-
-		fields = append(fields, fieldEntry{
-			name:     info.name,
-			value:    fieldVal,
-			asString: info.asString,
-		})
-	}
-
-	// Sort fields by name for deterministic output
-	sort.Slice(fields, func(i, j int) bool {
-		return fields[i].name < fields[j].name
-	})
-
-	buf.WriteString("{")
-	for i, field := range fields {
-		if i > 0 {
-			buf.WriteString(",")
-		}
-
-		// Write field name
-		buf.WriteString(`"`)
-		buf.WriteString(field.name)
-		buf.WriteString(`":`)
-
-		// Write field value
-		if err := marshalValue(field.value, buf, field.asString); err != nil {
-			return err
-		}
-	}
-
-	buf.WriteString("}")
-	return nil
-}
-
-// marshalMap marshals a map to JSON
-func marshalMap(rv reflect.Value, buf *bytes.Buffer) error {
-	if rv.IsNil() {
-		buf.WriteString("null")
-		return nil
-	}
-
-	mapType := rv.Type()
-
-	// Only support string keys
-	if mapType.Key().Kind() != reflect.String {
-		return fmt.Errorf("json: unsupported map key type %s", mapType.Key())
-	}
-
-	buf.WriteString("{")
-
-	// Get keys and sort them for deterministic output
-	keys := rv.MapKeys()
-	strKeys := make([]string, len(keys))
-	for i, key := range keys {
-		strKeys[i] = key.String()
-	}
-	sort.Strings(strKeys)
-
-	first := true
-	for _, keyStr := range strKeys {
-		key := reflect.ValueOf(keyStr)
-		val := rv.MapIndex(key)
-
-		if !first {
-			buf.WriteString(",")
-		}
-		first = false
-
-		// Write key
-		buf.WriteString(`"`)
-		buf.WriteString(keyStr)
-		buf.WriteString(`":`)
-
-		// Write value
-		if err := marshalValue(val, buf, false); err != nil {
-			return err
-		}
-	}
-
-	buf.WriteString("}")
-	return nil
-}
-
-// marshalSlice marshals a slice or array to JSON
-func marshalSlice(rv reflect.Value, buf *bytes.Buffer) error {
-	// Nil slices encode as null
-	if rv.Kind() == reflect.Slice && rv.IsNil() {
-		buf.WriteString("null")
-		return nil
-	}
-
-	buf.WriteString("[")
-
-	length := rv.Len()
-	for i := 0; i < length; i++ {
-		if i > 0 {
-			buf.WriteString(",")
-		}
-
-		if err := marshalValue(rv.Index(i), buf, false); err != nil {
-			return err
-		}
-	}
-
-	buf.WriteString("]")
-	return nil
 }

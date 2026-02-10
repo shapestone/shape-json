@@ -1,6 +1,6 @@
 # Performance Benchmark Report: shape-json vs encoding/json
 
-**Date:** 2025-12-22
+**Date:** 2026-02-10
 **Platform:** Apple M1 Max (darwin/arm64)
 **Go Version:** 1.25.4
 **Benchmark Time:** 3 seconds per test
@@ -8,10 +8,12 @@
 
 ## Executive Summary
 
-shape-json is **2x faster than encoding/json** while using less memory.
+shape-json is **2x faster than encoding/json** for unmarshaling while using less memory, and the v0.10.0 compiled encoder cache delivers **5.4x faster struct marshaling** and **3.1x faster map marshaling** vs the previous version.
 
 **Performance Highlights:**
 - **2x faster** than encoding/json for JSON unmarshaling
+- **5.4x faster** struct marshaling (v0.10.0 vs v0.9.x) with 6x fewer allocations
+- **3.1x faster** map marshaling (v0.10.0 vs v0.9.x) with 9x fewer allocations
 - **Less memory** - up to 1.6x more efficient memory usage
 - **Drop-in replacement** - same API as encoding/json
 - **Bonus features** - JSONPath queries and tree manipulation via `Parse()` when needed
@@ -57,6 +59,38 @@ shape-json is 1.9x faster and uses 1.6x less memory
 - `json.ValidateReader(r)` - Fast stream validation
 
 **Note:** shape-json also provides `Parse()` and `ParseDocument()` APIs for JSONPath queries and tree manipulation when you need those advanced features.
+
+---
+
+## Marshal Performance
+
+This section compares `json.Marshal()` performance between shape-json v0.10.0 (compiled encoder cache) and the previous shape-json v0.9.x (per-call reflection). The compiled encoder cache eliminates per-call reflection by caching type-level encoders with pre-computed field layouts and pre-encoded key bytes.
+
+### v0.10.0 vs v0.9.x (Old shape-json)
+
+**Struct Marshal**:
+```
+v0.9.x:  816 ns/op, 632 B/op, 12 allocs/op
+v0.10.0: 151 ns/op, 112 B/op,  2 allocs/op
+
+v0.10.0 is 5.4x faster with 6x fewer allocations
+```
+
+**Map Marshal**:
+```
+v0.9.x:  900 ns/op, 528 B/op, 18 allocs/op
+v0.10.0: 293 ns/op, 160 B/op,  2 allocs/op
+
+v0.10.0 is 3.1x faster with 9x fewer allocations
+```
+
+### Why is v0.10.0 Marshal Faster?
+
+1. **Compiled Encoder Cache** — encoders are built once per type and cached via `atomic.Value` copy-on-write map for lock-free reads
+2. **Zero-Reflect Fast Path** — `appendInterface` type-switch handles common Go types (string, int, bool, float, etc.) without any `reflect` calls
+3. **Pre-encoded Key Bytes** — struct field keys are JSON-escaped and stored as `[]byte` at encoder build time
+4. **Sorted Fields at Build Time** — field ordering is computed once, not on every `Marshal()` call
+5. **`strconv.Append*`** — zero-allocation numeric formatting directly into the output buffer
 
 ---
 
