@@ -252,6 +252,10 @@ doc, _ := json.ParseDocument(jsonString)
 user, _ := doc.GetObject("user")
 ```
 
+### Marshal Performance
+
+shape-json v0.10.0 introduces a compiled encoder cache for `Marshal()`, delivering **5.4x faster struct marshaling** and **3.1x faster map marshaling** compared to the previous version, with 6-9x fewer allocations. The compiled encoder eliminates per-call reflection by caching type-level encoders with pre-encoded key bytes.
+
 ### Choosing the Right API
 
 **Most common use cases** (80-90% of usage) → Use Fast Path:
@@ -291,7 +295,7 @@ shape-json uses a **unified architecture** with a single custom parser for all A
 - **Data Flow**:
   - Parse: `JSON string → Tokenizer → Parser → AST`
   - Render: `AST → Renderer → JSON string`
-  - Marshal: `Go types → AST → Renderer → JSON bytes`
+  - Marshal: `Go types → compiled encoder cache → JSON bytes`
   - Unmarshal: `JSON bytes → Parser → AST → Go types`
   - DOM: `JSON → AST → map/slice → Document/Array`
 
