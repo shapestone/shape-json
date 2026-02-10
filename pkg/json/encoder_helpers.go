@@ -2,6 +2,7 @@ package json
 
 import (
 	"errors"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -127,6 +128,23 @@ func sortStrings(s []string) {
 			j--
 		}
 		s[j+1] = key
+	}
+}
+
+// sortReflectStringKeys sorts a []reflect.Value of string-kinded values
+// in-place using insertion sort. For the small key counts typical in JSON
+// maps (< 20 keys) this is faster than sort.Slice because it avoids
+// the interface boxing and closure allocations.
+func sortReflectStringKeys(keys []reflect.Value) {
+	for i := 1; i < len(keys); i++ {
+		key := keys[i]
+		keyStr := key.String()
+		j := i - 1
+		for j >= 0 && keys[j].String() > keyStr {
+			keys[j+1] = keys[j]
+			j--
+		}
+		keys[j+1] = key
 	}
 }
 
