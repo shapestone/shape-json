@@ -431,15 +431,6 @@ func wrapStringEncoder(inner encoderFunc, kind reflect.Kind) encoderFunc {
 // Map Encoder
 // ================================
 
-// mapKV holds a key-value pair for sorted map encoding.
-type mapKV struct {
-	key string
-	val reflect.Value
-}
-
-// mapKVPool pools []mapKV slices for map key sorting to reduce allocations.
-var mapKVPool = sync.Pool{}
-
 func buildMapEncoder(t reflect.Type) encoderFunc {
 	if t.Key().Kind() != reflect.String {
 		return func(buf []byte, rv reflect.Value) ([]byte, error) {
@@ -461,52 +452,23 @@ func buildMapEncoder(t reflect.Type) encoderFunc {
 			return buf, nil
 		}
 
-		// Get or create a kv slice from pool
-		var pairs []mapKV
-		if v := mapKVPool.Get(); v != nil {
-			pairs = *v.(*[]mapKV)
-			pairs = pairs[:0]
-		}
-		if cap(pairs) < n {
-			pairs = make([]mapKV, 0, n)
-		}
+		keys := rv.MapKeys()
+		sortReflectStringKeys(keys)
 
-		// Collect key-value pairs in a single pass (avoids re-lookup)
-		iter := rv.MapRange()
-		for iter.Next() {
-			pairs = append(pairs, mapKV{key: iter.Key().String(), val: iter.Value()})
-		}
-		sort.Slice(pairs, func(i, j int) bool {
-			return pairs[i].key < pairs[j].key
-		})
-
-		for i := range pairs {
+		for i, key := range keys {
 			if i > 0 {
 				buf = append(buf, ',')
 			}
-			// Write key
 			buf = append(buf, '"')
-			buf = appendEscapedString(buf, pairs[i].key)
+			buf = appendEscapedString(buf, key.String())
 			buf = append(buf, '"', ':')
 
-			// Write value (no re-lookup needed)
 			var err error
-			buf, err = valEnc(buf, pairs[i].val)
+			buf, err = valEnc(buf, rv.MapIndex(key))
 			if err != nil {
-				// Clear refs before returning to pool
-				for j := range pairs {
-					pairs[j].val = reflect.Value{}
-				}
-				mapKVPool.Put(&pairs)
 				return buf, err
 			}
 		}
-
-		// Clear reflect.Value refs before returning to pool (avoid retaining references)
-		for i := range pairs {
-			pairs[i].val = reflect.Value{}
-		}
-		mapKVPool.Put(&pairs)
 
 		buf = append(buf, '}')
 		return buf, nil
