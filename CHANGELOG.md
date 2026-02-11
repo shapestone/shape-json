@@ -5,6 +5,13 @@ All notable changes to the shape-json project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1] - 2026-02-10
+
+### Changed
+- **Reduced map encoder allocations** — nested struct marshal drops from 12 to 9 allocs/op (592B from 656B), now at parity with encoding/json alloc count while ~20% faster
+- Replaced `[]mapKV` + `sync.Pool` + `sort.Slice` with `rv.MapKeys()` + insertion sort on `[]reflect.Value`, eliminating interface boxing, closure heap-alloc, and pool escape overhead
+- Added `sortReflectStringKeys` helper in `encoder_helpers.go`
+
 ## [0.10.0] - 2026-02-10
 
 ### Added
@@ -131,5 +138,6 @@ Copyright © 2020-2025 Shapestone
 - Documentation: https://pkg.go.dev/github.com/shapestone/shape-json
 - Issues: https://github.com/shapestone/shape-json/issues
 
+[0.10.1]: https://github.com/shapestone/shape-json/releases/tag/v0.10.1
 [0.10.0]: https://github.com/shapestone/shape-json/releases/tag/v0.10.0
 [0.9.0]: https://github.com/shapestone/shape-json/releases/tag/v0.9.0
