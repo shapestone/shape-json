@@ -1,19 +1,17 @@
+version: "2"
+
 run:
   timeout: 5m
   go: '1.23'
 
 linters:
   enable:
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - misspell
     - revive
-    - stylecheck
     - unconvert
     - unparam
   disable:
@@ -21,59 +19,53 @@ linters:
     - gocritic  # Too many opinionated suggestions
     - gosec     # Security checks can be enabled later
     - prealloc  # Performance optimization can be done later
-
-linters-settings:
-  errcheck:
-    check-blank: true
-    check-type-assertions: true
-
-  govet:
-    enable-all: true
-    disable:
-      - shadow
-      - fieldalignment  # Struct optimization can be done later
-
-  revive:
+  settings:
+    errcheck:
+      check-blank: true
+      check-type-assertions: true
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment  # Struct optimization can be done later
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+          disabled: false
+          arguments:
+            - "checkPrivateReceivers"
+            - "sayRepetitiveInsteadOfStutters"
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - whyNoLint
+        - unnamedResult
+  exclusions:
     rules:
-      - name: exported
-        severity: warning
-        disabled: false
-        arguments:
-          - "checkPrivateReceivers"
-          - "sayRepetitiveInsteadOfStutters"
+      # Exclude some linters from running on tests files.
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - funlen
+    paths:
+      - scripts
 
-  gofmt:
-    simplify: true
-
-  stylecheck:
-    checks: ["all", "-ST1000", "-ST1003"]
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - whyNoLint
-      - unnamedResult
-
-issues:
-  exclude-dirs:
-    - scripts
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
-
-  max-issues-per-linter: 0
-  max-same-issues: 0
-
-output:
-  sort-results: true
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    paths:
+      - scripts

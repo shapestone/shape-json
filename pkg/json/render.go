@@ -333,7 +333,7 @@ func escapeString(s string) string {
 		default:
 			if r < 0x20 {
 				// Control characters (U+0000 to U+001F)
-				buf.WriteString(fmt.Sprintf(`\u%04x`, r))
+				fmt.Fprintf(&buf, `\u%04x`, r)
 			} else {
 				// Regular character (including Unicode)
 				buf.WriteRune(r)

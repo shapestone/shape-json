@@ -96,9 +96,8 @@ jobs:
           cache-dependency-path: shape-json/go.sum
 
       - name: Run linter
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           working-directory: shape-json
-          skip-pkg-cache: true
-          skip-build-cache: true
+          skip-cache: true

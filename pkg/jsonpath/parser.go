@@ -478,9 +478,10 @@ func (p *parser) collectFilterTokens() ([]token, error) {
 	for !p.isAtEnd() {
 		current := p.current()
 
-		if current.typ == tokenLeftParen {
+		switch current.typ {
+		case tokenLeftParen:
 			parenDepth++
-		} else if current.typ == tokenRightParen {
+		case tokenRightParen:
 			parenDepth--
 			if parenDepth == 0 {
 				p.advance() // consume the ')'
