@@ -19,62 +19,53 @@ linters:
     - gocritic  # Too many opinionated suggestions
     - gosec     # Security checks can be enabled later
     - prealloc  # Performance optimization can be done later
+  settings:
+    errcheck:
+      check-blank: true
+      check-type-assertions: true
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment  # Struct optimization can be done later
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+          disabled: false
+          arguments:
+            - "checkPrivateReceivers"
+            - "sayRepetitiveInsteadOfStutters"
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - whyNoLint
+        - unnamedResult
+  exclusions:
+    rules:
+      # Exclude some linters from running on tests files.
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - funlen
+    paths:
+      - scripts
 
 formatters:
   enable:
     - gofmt
     - goimports
-
-linters-settings:
-  errcheck:
-    check-blank: true
-    check-type-assertions: true
-
-  govet:
-    enable-all: true
-    disable:
-      - shadow
-      - fieldalignment  # Struct optimization can be done later
-
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-        disabled: false
-        arguments:
-          - "checkPrivateReceivers"
-          - "sayRepetitiveInsteadOfStutters"
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - whyNoLint
-      - unnamedResult
-
-formatters-settings:
-  gofmt:
-    simplify: true
-
-issues:
-  exclude-dirs:
-    - scripts
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
-
-  max-issues-per-linter: 0
-  max-same-issues: 0
-
-output:
-  sort-results: true
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    paths:
+      - scripts
