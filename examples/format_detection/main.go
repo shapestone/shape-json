@@ -21,7 +21,7 @@ func main() {
 
 	// Example 2: Validation with Error Details
 	fmt.Println("\nExample 2: Validation with Error Details")
-	invalidJSON := `{"name": "Alice"`  // Missing closing brace
+	invalidJSON := `{"name": "Alice"` // Missing closing brace
 	if err := json.Validate(invalidJSON); err != nil {
 		fmt.Printf("  ❌ Invalid JSON: %v\n", err)
 	} else {
@@ -145,7 +145,7 @@ func main() {
 		input string
 	}{
 		{"Valid user request", `{"action": "create", "user": {"name": "Alice"}}`},
-		{"Invalid JSON syntax", `{"action": "create"` },
+		{"Invalid JSON syntax", `{"action": "create"`},
 		{"Valid but incomplete", `{"action": "delete"}`},
 	}
 
