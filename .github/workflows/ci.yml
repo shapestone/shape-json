@@ -100,5 +100,4 @@ jobs:
         with:
           version: latest
           working-directory: shape-json
-          skip-pkg-cache: true
-          skip-build-cache: true
+          skip-cache: true
