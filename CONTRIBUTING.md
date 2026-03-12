@@ -1,6 +1,6 @@
-# Contributing to Shape
+# Contributing to shape-json
 
-Thank you for your interest in contributing to Shape! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to shape-json! This document provides guidelines for contributing to the project.
 
 ## Table of Contents
 
@@ -99,18 +99,28 @@ See [Local Setup Guide](docs/contributor/local-setup.md) for detailed instructio
 
 ```bash
 # Clone repository
-git clone https://github.com/shapestone/shape.git
-cd shape
+git clone https://github.com/shapestone/shape-json.git
+cd shape-json
 
 # Run tests
-go test ./...
+make test
 
 # Run linter
-golangci-lint run
+make lint
 
 # Check coverage
-go test -cover ./...
+make coverage
 ```
+
+### Key Make Targets
+
+| Target | When to use |
+|--------|-------------|
+| `make test` | Before every PR — runs all tests with race detector |
+| `make lint` | Before every PR — runs golangci-lint |
+| `make coverage` | Check test coverage (target: 90%+) |
+| `make all` | Full verification pass before submitting |
+| `make bench` | Run performance benchmarks |
 
 ## Pull Request Process
 

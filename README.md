@@ -1,5 +1,7 @@
 # shape-json
 
+A fast, drop-in JSON library for Go — replaces encoding/json with JSONPath queries, a fluent DOM builder, and a high-performance parser.
+
 ![Build Status](https://github.com/shapestone/shape-json/actions/workflows/ci.yml/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/shapestone/shape-json?v=2)](https://goreportcard.com/report/github.com/shapestone/shape-json)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -16,12 +18,54 @@
 
 A JSON parser for the [Shape Parser™](https://github.com/shapestone/shape) ecosystem.
 
-Parses JSON data (RFC 8259) into Shape Parser's™ unified AST representation.
+Parses JSON data (RFC 8259, the JSON internet standard) into Shape Parser's™ unified AST representation.
+
+## What it does
+
+shape-json is a complete JSON parser and serializer for Go programs. It parses JSON (as defined by RFC 8259, the JSON internet standard) into either Go structs or a traversable Abstract Syntax Tree (AST). It is a pure Go implementation — it does not use or wrap `encoding/json`.
+
+It provides four APIs at different levels of abstraction: a drop-in `encoding/json` replacement, a fluent DOM (Document Object Model) builder, a JSONPath query engine, and a low-level AST API for parser tooling.
+
+## Who it's for
+
+- Go developers who want a drop-in replacement for `encoding/json` with better performance
+- Developers who need to query JSON with JSONPath (e.g., `$.users[?(@.role == "admin")].name`)
+- Tooling authors who need a traversable Abstract Syntax Tree (AST) from JSON input
+- Developers building data pipelines that process JSON files, APIs, or config files
+
+## Use Cases
+
+- **API clients**: Unmarshal JSON responses from REST APIs into Go structs
+- **Configuration loading**: Parse JSON config files with validation
+- **Data transformation pipelines**: Use the AST path to read, modify, and re-serialize JSON
+- **JSONPath queries**: Extract values from deeply nested JSON with RFC 9535 filter expressions
+- **JSON validation services**: Use `Validate()` / `ValidateReader()` for input validation without full parsing
+- **JSON builder tools**: Use the fluent DOM API to construct JSON from code without string templates
+- **Parser/tooling authors**: Use the AST directly for static analysis, linting, or format conversion
 
 ## Installation
 
 ```bash
 go get github.com/shapestone/shape-json
+```
+
+## Quick Start
+
+```bash
+# Install
+go get github.com/shapestone/shape-json
+
+# Run tests
+make test
+
+# Run tests with coverage report
+make coverage
+
+# Build
+make build
+
+# Run all checks (grammar, tests, lint, build, coverage)
+make all
 ```
 
 ## Usage
@@ -177,7 +221,7 @@ name := nameNode.(*ast.LiteralNode).Value().(string)  // "Alice"
 
 ## Features
 
-- **Fluent DOM API**: User-friendly JSON manipulation (Recommended)
+- **Fluent DOM (Document Object Model) API**: User-friendly JSON manipulation (Recommended)
   - Type-safe getters (`GetString`, `GetInt`, `GetBool`, etc.) - No type assertions!
   - Fluent builder pattern with method chaining
   - Clean array semantics (not objects with numeric keys)
@@ -192,9 +236,9 @@ name := nameNode.(*ast.LiteralNode).Value().(string)  // "Alice"
   - **Pure implementation**: Does NOT use encoding/json internally
 - **JSON Validation**: Idiomatic error-based validation
   - `Validate()` / `ValidateReader()` - Returns nil if valid, error with details if invalid
-- **Complete JSON Support**: Full RFC 8259 compliance
+- **Complete JSON Support**: Full RFC 8259 (the JSON internet standard) compliance
 - **Proper Type Distinction**: Empty arrays `[]` and empty objects `{}` are properly distinguished with full round-trip fidelity
-- **LL(1) Recursive Descent Parser**: Hand-coded, optimized parser
+- **LL(1) (top-down, one-token lookahead) Recursive Descent Parser**: Hand-coded, optimized parser
 - **Shape AST Integration**: Returns unified AST nodes for advanced use cases
 - **JSONPath Query Engine**: RFC 9535-compliant JSONPath implementation (see [pkg/jsonpath](pkg/jsonpath/README.md))
 - **Comprehensive Error Messages**: Context-aware error reporting
@@ -284,9 +328,9 @@ jsonpath.Query(node, "$.items[*].price")  // JSONPath needs AST
 
 shape-json uses a **unified architecture** with a single custom parser for all APIs:
 
-- **Grammar-Driven**: EBNF grammar in `docs/grammar/json.ebnf`
+- **Grammar-Driven**: EBNF (Extended Backus-Naur Form) grammar in `docs/grammar/json.ebnf`
 - **Tokenizer**: Custom tokenizer using Shape's framework
-- **Parser**: LL(1) recursive descent with single token lookahead
+- **Parser**: LL(1) (top-down, one-token lookahead) recursive descent with single token lookahead
 - **Rendering**: Custom JSON renderer (no encoding/json dependency)
 - **AST Representation**:
   - Objects → `*ast.ObjectNode` with properties map
@@ -364,7 +408,7 @@ See [examples/format_detection/README.md](examples/format_detection/README.md) f
 
 ## Grammar
 
-See [docs/grammar/json.ebnf](docs/grammar/json.ebnf) for the complete EBNF specification.
+See [docs/grammar/json.ebnf](docs/grammar/json.ebnf) for the complete EBNF (Extended Backus-Naur Form) specification.
 
 Key grammar rules:
 ```ebnf
@@ -422,7 +466,7 @@ shape-json has comprehensive test coverage including unit tests, fuzzing, and gr
 
 ```bash
 # Run all tests
-go test ./...
+make test
 
 # Run with coverage
 make coverage
@@ -601,6 +645,34 @@ go run scripts/generate_benchmark_report/main.go -save-history=false
 For detailed information on the benchmarking system, see:
 - [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) - Latest benchmark results
 - [benchmarks/history/README.md](benchmarks/history/README.md) - History tracking guide
+
+## Make Targets
+
+| Target | Description |
+|--------|-------------|
+| `make test` | Run all tests with race detector |
+| `make lint` | Run golangci-lint static analysis |
+| `make build` | Build the project |
+| `make coverage` | Generate HTML coverage report in `coverage/` |
+| `make all` | Run grammar-verify, test, lint, build, coverage |
+| `make grammar-test` | Run grammar verification tests |
+| `make grammar-verify` | Verify grammar files exist and are valid |
+| `make bench` | Run all benchmarks |
+| `make bench-report` | Run benchmarks and save to `benchmarks/results.txt` |
+| `make bench-compare` | Run 10x for statistical analysis (benchstat) |
+| `make bench-profile` | Run benchmarks with CPU and memory profiling |
+| `make performance-report` | Generate full report + save to `benchmarks/history/` |
+| `make bench-history` | List all historical benchmark runs |
+| `make bench-compare-history` | Compare latest vs previous benchmark run |
+| `make clean` | Remove `coverage/` and `benchmarks/` directories |
+
+## Related Projects
+
+| Repository | Description |
+|-----------|-------------|
+| [shapestone/shape](https://github.com/shapestone/shape) | Shape Parser™ — multi-format parser ecosystem |
+| [shapestone/shape-core](https://github.com/shapestone/shape-core) | Universal AST and tokenizer framework |
+| [shapestone/inkling](https://github.com/shapestone/inkling) | Example custom DSL using Shape's tokenizer |
 
 ## License
 
