@@ -19,11 +19,11 @@ import (
 //   - Line and block comments
 //   - Duplicate keys (last value wins)
 type LenientParser struct {
-	tokenizer  *shapetokenizer.Tokenizer
-	current    *shapetokenizer.Token
-	hasToken   bool
-	input      string
-	collector  *lenient.CorrectionCollector
+	tokenizer *shapetokenizer.Tokenizer
+	current   *shapetokenizer.Token
+	hasToken  bool
+	input     string
+	collector *lenient.CorrectionCollector
 }
 
 // NewLenientParser creates a lenient JSON parser for the given input string.
@@ -79,7 +79,7 @@ func (p *LenientParser) parseValue() (ast.SchemaNode, error) {
 	case tokenizer.TokenString:
 		return p.parseString()
 	case tokenizer.TokenSingleString:
-		return p.parseSingleQuotedString()
+		return p.parseSingleQuotedString(), nil
 	case tokenizer.TokenNumber:
 		return p.parseNumber()
 	case tokenizer.TokenTrue, tokenizer.TokenFalse:
@@ -297,7 +297,7 @@ func (p *LenientParser) tryRecoverUnescapedQuote(openOffset int) (string, bool) 
 	return "", false
 }
 
-func (p *LenientParser) parseSingleQuotedString() (*ast.LiteralNode, error) {
+func (p *LenientParser) parseSingleQuotedString() *ast.LiteralNode {
 	pos := p.position()
 	tokenValue := p.current.ValueString()
 	p.advance()
@@ -306,7 +306,7 @@ func (p *LenientParser) parseSingleQuotedString() (*ast.LiteralNode, error) {
 	p.collector.Add(lenient.CorrectionSingleQuote, pos,
 		tokenValue, fmt.Sprintf("%q", unquoted), "converted single-quoted string to double-quoted")
 
-	return ast.NewLiteralNode(unquoted, pos), nil
+	return ast.NewLiteralNode(unquoted, pos)
 }
 
 func (p *LenientParser) parseNumber() (*ast.LiteralNode, error) {

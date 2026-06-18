@@ -9,6 +9,7 @@ import (
 // CorrectionKind identifies the type of correction applied during Repair.
 type CorrectionKind = lenient.CorrectionKind
 
+// Correction kinds for each type of JSON error that can be auto-corrected.
 const (
 	CorrectionTrailingComma  = lenient.CorrectionTrailingComma
 	CorrectionSingleQuote    = lenient.CorrectionSingleQuote

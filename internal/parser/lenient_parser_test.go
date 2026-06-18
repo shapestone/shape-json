@@ -266,10 +266,10 @@ func TestLenientParser_MixedCorrections(t *testing.T) {
 
 func TestLenientParser_UnescapedQuotes(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantKey  string
-		wantVal  string
+		name    string
+		input   string
+		wantKey string
+		wantVal string
 	}{
 		{
 			name:    "simple unescaped",
@@ -343,9 +343,9 @@ func TestLenientParser_UnescapedQuotesInArray(t *testing.T) {
 
 func TestLenientParser_InvalidJSON(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantErr  string
+		name    string
+		input   string
+		wantErr string
 	}{
 		{"empty input", "", "unexpected end of input"},
 		{"just comma", ",", "expected JSON value"},
