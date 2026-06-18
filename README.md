@@ -197,6 +197,46 @@ if err := json.ValidateReader(file); err != nil {
 // err == nil means valid JSON
 ```
 
+### JSON Repair (Lenient Reading)
+
+Auto-correct invalid-but-understandable JSON into valid RFC 8259 output:
+
+```go
+import "github.com/shapestone/shape-json/pkg/json"
+
+// Repair handles: trailing commas, single-quoted strings, unquoted keys,
+// comments, unescaped quotes in strings, and duplicate keys (last wins).
+fixed, err := json.Repair(`{
+    // user config
+    name: 'Alice',
+    bio: "She said "hello" to everyone",
+    tags: ["go", "rust",],
+}`)
+// fixed: {"bio":"She said \"hello\" to everyone","name":"Alice","tags":["go","rust"]}
+```
+
+**Try-fast-then-repair pattern** — use the fast path normally, repair only on failure:
+
+```go
+err := json.Unmarshal(data, &v)
+if err != nil {
+    fixed, repairErr := json.RepairBytes(data)
+    if repairErr != nil {
+        return repairErr // truly broken
+    }
+    err = json.Unmarshal(fixed, &v)
+}
+```
+
+**Repair with diagnostics** — see exactly what was corrected:
+
+```go
+fixed, corrections, err := json.RepairWithCorrections(rawInput)
+for _, c := range corrections {
+    log.Printf("Fixed %s at line %d: %s", c.Kind, c.Position.Row(), c.Message)
+}
+```
+
 ### Low-Level AST API
 
 For advanced use cases, access the underlying AST:
@@ -236,6 +276,10 @@ name := nameNode.(*ast.LiteralNode).Value().(string)  // "Alice"
   - **Pure implementation**: Does NOT use encoding/json internally
 - **JSON Validation**: Idiomatic error-based validation
   - `Validate()` / `ValidateReader()` - Returns nil if valid, error with details if invalid
+- **JSON Repair (Lenient Reading)**: Auto-correct invalid JSON into valid output
+  - `Repair()` / `RepairBytes()` / `RepairWithCorrections()` - Fix common errors
+  - Handles: trailing commas, single-quoted strings, unquoted keys, comments, unescaped quotes, duplicate keys
+  - Composable with existing APIs — repair first, then Parse/Unmarshal as usual
 - **Complete JSON Support**: Full RFC 8259 (the JSON internet standard) compliance
 - **Proper Type Distinction**: Empty arrays `[]` and empty objects `{}` are properly distinguished with full round-trip fidelity
 - **LL(1) (top-down, one-token lookahead) Recursive Descent Parser**: Hand-coded, optimized parser
@@ -444,7 +488,7 @@ go func() { json.Validate(input2) }()
 ### Thread Safety Guarantees
 
 - **`Unmarshal()`, `Marshal()`** - Thread-safe, use internal buffer pools
-- **`Parse()`, `Validate()`** - Thread-safe, create new parser instances
+- **`Parse()`, `Validate()`, `Repair()`** - Thread-safe, create new parser instances
 - **`NewDecoder()`, `NewEncoder()`** - Thread-safe factory functions
 - **Race detector verified** - All tests pass with `go test -race`
 

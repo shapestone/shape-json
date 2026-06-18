@@ -5,6 +5,23 @@ All notable changes to the shape-json project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-06-18
+
+### Added
+- **JSON Repair API** — auto-correct invalid-but-understandable JSON into valid RFC 8259 output
+  - `Repair(string)` — returns repaired JSON string
+  - `RepairBytes([]byte)` — byte slice variant, composable with `Unmarshal`
+  - `RepairWithCorrections(string)` — returns repaired JSON plus a list of corrections applied
+- **6 correction types** supported:
+  - Trailing commas in objects and arrays
+  - Single-quoted strings (converted to double-quoted)
+  - Unquoted object keys (quoted)
+  - Line comments (`//`) and block comments (`/* */`) (removed)
+  - Unescaped double quotes inside strings (escaped)
+  - Duplicate keys (last value wins)
+- Lenient tokenizer with `CommentMatcher`, `LenientStringMatcher`, and `UnquotedKeyMatcher`
+- Lenient AST parser with forward-scan recovery for unescaped quotes
+
 ## [0.10.1] - 2026-02-10
 
 ### Changed
