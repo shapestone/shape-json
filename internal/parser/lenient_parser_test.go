@@ -341,6 +341,55 @@ func TestLenientParser_UnescapedQuotesInArray(t *testing.T) {
 	}
 }
 
+func TestLenientParser_UnescapedQuotesNotFirstElement(t *testing.T) {
+	// Regression: unescaped quote recovery must work when the defective
+	// element is not the first in an array and strings contain newlines.
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			"second array element with unescaped quotes",
+			`{"items":[{"name":"Clean"},{"name":"Broken","def":"room (e.g. "Deluxe King") scoped."}]}`,
+		},
+		{
+			"newline in defective string",
+			"{\"items\":[{\"ok\":\"clean\"},{\"def\":\"room (e.g. \"Deluxe King\") scoped,\nstays.\"}]}",
+		},
+		{
+			"newline before unescaped quote",
+			"{\"items\":[{\"ok\":\"clean\"},{\"def\":\"A named category of\naccommodation room (e.g. \"Deluxe King\") scoped.\"}]}",
+		},
+		{
+			"full accommodation-fulfillment repro",
+			"{\"items\":[{\"name\":\"Room Daily\",\"kind\":\"entity\",\"definition\":\"A per-day record for a physical room.\",\"evidence\":\"route.ts\",\"register\":\"business\"},{\"name\":\"Room Type\",\"kind\":\"entity\",\"definition\":\"A named category of accommodation room (e.g. \"Deluxe King\") scoped to a program, used to group inventory blocks and link room assignments to stays.\",\"evidence\":\"route.ts\",\"register\":\"business\"}]}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, corrections := parseLenient(t, tt.input)
+			hasUnescaped := false
+			for _, c := range corrections {
+				if c.Kind == lenient.CorrectionUnescapedQuote {
+					hasUnescaped = true
+				}
+			}
+			if !hasUnescaped {
+				t.Error("expected UnescapedQuote correction")
+			}
+		})
+	}
+}
+
+func TestLenientParser_NewlinesInStrings(t *testing.T) {
+	input := "{\"msg\":\"line one\\nline two\"}"
+	node, _ := parseLenient(t, input)
+	if node == nil {
+		t.Fatal("expected non-nil node")
+	}
+}
+
 func TestLenientParser_InvalidJSON(t *testing.T) {
 	tests := []struct {
 		name    string

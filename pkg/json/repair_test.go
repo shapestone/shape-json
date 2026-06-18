@@ -283,6 +283,31 @@ func TestRepair_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestRepair_UnescapedQuoteNotFirstElement(t *testing.T) {
+	// Regression: accommodation-fulfillment bug — unescaped quotes in a
+	// non-first array element with newlines inside strings.
+	input := "{\"items\":[{\"name\":\"Room Daily\",\"kind\":\"entity\",\"definition\":\"A per-day record for a physical room.\",\"evidence\":\"route.ts\",\"register\":\"business\"},{\"name\":\"Room Type\",\"kind\":\"entity\",\"definition\":\"A named category of accommodation room (e.g. \"Deluxe King\") scoped to a program, used to group inventory blocks and link room assignments to stays.\",\"evidence\":\"route.ts\",\"register\":\"business\"}]}"
+
+	result, err := json.Repair(input)
+	if err != nil {
+		t.Fatalf("Repair failed: %v", err)
+	}
+	if err := json.Validate(result); err != nil {
+		t.Errorf("repaired output is not valid JSON: %v", err)
+	}
+}
+
+func TestRepair_NewlinesInStrings(t *testing.T) {
+	input := "{\"msg\":\"hello\\nworld\",\"ok\":true}"
+	result, err := json.Repair(input)
+	if err != nil {
+		t.Fatalf("Repair failed: %v", err)
+	}
+	if err := json.Validate(result); err != nil {
+		t.Errorf("repaired output is not valid JSON: %v", err)
+	}
+}
+
 func TestRepair_Error(t *testing.T) {
 	tests := []struct {
 		name  string

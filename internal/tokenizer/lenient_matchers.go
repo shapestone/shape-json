@@ -76,8 +76,8 @@ func matchBlockComment(stream tokenizer.Stream) *tokenizer.Token {
 }
 
 // LenientStringMatcher creates a matcher that handles both double-quoted and
-// single-quoted JSON strings. Single-quoted strings are normalized to
-// double-quoted form in the token value.
+// single-quoted JSON strings. Unlike the strict matcher, it allows control
+// characters (newlines, tabs, etc.) inside double-quoted strings.
 func LenientStringMatcher() tokenizer.Matcher {
 	return func(stream tokenizer.Stream) *tokenizer.Token {
 		r, ok := stream.PeekChar()
@@ -86,11 +86,7 @@ func LenientStringMatcher() tokenizer.Matcher {
 		}
 
 		if r == '"' {
-			// Delegate to the standard string matcher for double-quoted strings
-			if byteStream, ok := stream.(tokenizer.ByteStream); ok {
-				return stringMatcherByte(byteStream)
-			}
-			return stringMatcherRune(stream)
+			return lenientDoubleQuotedStringMatcher(stream)
 		}
 
 		if r == '\'' {
@@ -98,6 +94,49 @@ func LenientStringMatcher() tokenizer.Matcher {
 		}
 
 		return nil
+	}
+}
+
+// lenientDoubleQuotedStringMatcher is like the strict string matcher but
+// allows control characters (< 0x20) such as raw newlines inside strings.
+func lenientDoubleQuotedStringMatcher(stream tokenizer.Stream) *tokenizer.Token {
+	r, ok := stream.NextChar()
+	if !ok || r != '"' {
+		return nil
+	}
+
+	var value []rune
+	value = append(value, r)
+
+	for {
+		r, ok := stream.NextChar()
+		if !ok {
+			return nil
+		}
+
+		value = append(value, r)
+
+		if r == '"' {
+			return tokenizer.NewToken(TokenString, value)
+		}
+
+		if r == '\\' {
+			escaped, ok := stream.NextChar()
+			if !ok {
+				return nil
+			}
+			value = append(value, escaped)
+
+			if escaped == 'u' {
+				for i := 0; i < 4; i++ {
+					hex, ok := stream.NextChar()
+					if !ok {
+						return nil
+					}
+					value = append(value, hex)
+				}
+			}
+		}
 	}
 }
 
