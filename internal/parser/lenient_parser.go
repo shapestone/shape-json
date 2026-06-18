@@ -19,11 +19,11 @@ import (
 //   - Line and block comments
 //   - Duplicate keys (last value wins)
 type LenientParser struct {
-	tokenizer *shapetokenizer.Tokenizer
-	current   *shapetokenizer.Token
-	hasToken  bool
-	input     string
-	collector *lenient.CorrectionCollector
+	tokenizer  *shapetokenizer.Tokenizer
+	current    *shapetokenizer.Token
+	hasToken   bool
+	inputRunes []rune
+	collector  *lenient.CorrectionCollector
 }
 
 // NewLenientParser creates a lenient JSON parser for the given input string.
@@ -31,9 +31,9 @@ func NewLenientParser(input string) *LenientParser {
 	stream := shapetokenizer.NewStream(input)
 	tok := tokenizer.NewLenientTokenizerWithStream(stream)
 	p := &LenientParser{
-		tokenizer: &tok,
-		input:     input,
-		collector: lenient.NewCorrectionCollector(),
+		tokenizer:  &tok,
+		inputRunes: []rune(input),
+		collector:  lenient.NewCorrectionCollector(),
 	}
 	p.advance()
 	return p
@@ -233,7 +233,7 @@ func (p *LenientParser) parseString() (*ast.LiteralNode, error) {
 
 	// Check if the next token is structurally valid after a string value.
 	// If not, this may be an unescaped quote situation.
-	if p.input != "" && p.hasToken && !p.isStructuralFollower() {
+	if len(p.inputRunes) > 0 && p.hasToken && !p.isStructuralFollower() {
 		if recovered, ok := p.tryRecoverUnescapedQuote(offset); ok {
 			return ast.NewLiteralNode(recovered, pos), nil
 		}
@@ -259,17 +259,19 @@ func (p *LenientParser) isStructuralFollower() bool {
 // tryRecoverUnescapedQuote scans the raw input from the opening quote position
 // to find the real closing quote. It scans forward to find the first `"` that
 // is followed by a structural character (`,`, `}`, `]`, `:`) or EOF.
-// Returns the unescaped string content and true if recovery succeeded.
+//
+// openOffset is a rune index (from Token.Offset), matching the tokenizer's
+// position tracking which counts runes, not bytes.
 func (p *LenientParser) tryRecoverUnescapedQuote(openOffset int) (string, bool) {
-	if openOffset < 0 || openOffset >= len(p.input) || p.input[openOffset] != '"' {
+	if openOffset < 0 || openOffset >= len(p.inputRunes) || p.inputRunes[openOffset] != '"' {
 		return "", false
 	}
 
-	content := p.input[openOffset+1:]
+	content := p.inputRunes[openOffset+1:]
 
 	// Skip past the first `"` (the one the tokenizer already found as the close)
 	// and keep scanning for a `"` followed by a structural character.
-	firstClose := strings.IndexByte(content, '"')
+	firstClose := indexRune(content, '"')
 	if firstClose < 0 {
 		return "", false
 	}
@@ -278,13 +280,13 @@ func (p *LenientParser) tryRecoverUnescapedQuote(openOffset int) (string, bool) 
 		if content[i] != '"' {
 			continue
 		}
-		after := strings.TrimLeft(content[i+1:], " \t\n\r")
-		if len(after) == 0 || after[0] == ',' || after[0] == '}' || after[0] == ']' || after[0] == ':' {
-			raw := content[:i]
+		if isStructuralAfter(content[i+1:]) {
+			raw := string(content[:i])
 			p.collector.Add(lenient.CorrectionUnescapedQuote, ast.NewPosition(openOffset, 0, 0),
 				`"`+raw+`"`, "", "escaped unquoted double quotes inside string")
 
 			// Advance the tokenizer past all tokens we consumed during recovery.
+			// closeOffset is a rune index matching Token.Offset().
 			closeOffset := openOffset + 1 + i + 1
 			for p.hasToken && p.current.Offset() < closeOffset {
 				p.advance()
@@ -295,6 +297,25 @@ func (p *LenientParser) tryRecoverUnescapedQuote(openOffset int) (string, bool) 
 	}
 
 	return "", false
+}
+
+func indexRune(runes []rune, target rune) int {
+	for i, r := range runes {
+		if r == target {
+			return i
+		}
+	}
+	return -1
+}
+
+func isStructuralAfter(remaining []rune) bool {
+	for _, r := range remaining {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			continue
+		}
+		return r == ',' || r == '}' || r == ']' || r == ':'
+	}
+	return true // EOF is valid
 }
 
 func (p *LenientParser) parseSingleQuotedString() *ast.LiteralNode {

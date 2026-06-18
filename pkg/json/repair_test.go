@@ -297,6 +297,36 @@ func TestRepair_UnescapedQuoteNotFirstElement(t *testing.T) {
 	}
 }
 
+func TestRepair_UnescapedQuoteWithMultibyteUTF8(t *testing.T) {
+	// Regression: multi-byte UTF-8 characters (em-dash U+2014) in earlier
+	// strings caused rune/byte offset mismatch in unescaped quote recovery.
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			"em-dash in first element",
+			"{\"items\":[{\"name\":\"A\",\"evidence\":\"route.ts — handler\",\"register\":\"b\"},{\"name\":\"B\",\"definition\":\"a room (e.g. \"Deluxe King\") scoped.\",\"register\":\"b\"}]}",
+		},
+		{
+			"em-dash and backtick",
+			"{\"items\":[{\"name\":\"A\",\"evidence\":\"route.ts — `GET`\",\"register\":\"b\"},{\"name\":\"B\",\"definition\":\"a room (e.g. \"Deluxe King\") scoped.\",\"register\":\"b\"}]}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := json.Repair(tt.input)
+			if err != nil {
+				t.Fatalf("Repair failed: %v", err)
+			}
+			if err := json.Validate(result); err != nil {
+				t.Errorf("repaired output is not valid JSON: %v", err)
+			}
+		})
+	}
+}
+
 func TestRepair_NewlinesInStrings(t *testing.T) {
 	input := "{\"msg\":\"hello\\nworld\",\"ok\":true}"
 	result, err := json.Repair(input)
