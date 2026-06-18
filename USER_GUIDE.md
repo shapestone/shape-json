@@ -20,6 +20,7 @@
    - [JSON Validation](#json-validation)
    - [Streaming Parser](#streaming-parser)
    - [Low-Level AST API](#low-level-ast-api)
+   - [JSON Repair (Lenient Reading)](#json-repair-lenient-reading)
 6. [JSONPath Query Engine](#jsonpath-query-engine)
 7. [Performance & Benchmarks](#performance--benchmarks)
 8. [Architecture](#architecture)
@@ -210,6 +211,9 @@ go func() { json.Validate(data2) }()
 | `Parse()` | ✅ Yes | Creates new parser per call |
 | `ParseReader()` | ✅ Yes | Creates new parser per call |
 | `Validate()` | ✅ Yes | Creates new parser per call |
+| `Repair()` | ✅ Yes | Creates new parser per call |
+| `RepairBytes()` | ✅ Yes | Creates new parser per call |
+| `RepairWithCorrections()` | ✅ Yes | Creates new parser per call |
 | `NewDecoder()` | ✅ Yes | Factory function, thread-safe |
 | `NewEncoder()` | ✅ Yes | Factory function, thread-safe |
 | `Decoder.Decode()` | ⚠️ Instance | Don't share decoder instances between goroutines |
@@ -484,6 +488,83 @@ obj := node.(*ast.ObjectNode)
 nameNode, _ := obj.GetProperty("name")
 name := nameNode.(*ast.LiteralNode).Value().(string)  // "Alice"
 ```
+
+### JSON Repair (Lenient Reading)
+
+Real-world JSON is often malformed: LLM outputs contain unescaped quotes, config files use comments and trailing commas, APIs return single-quoted strings. The Repair API auto-corrects these errors into valid RFC 8259 JSON.
+
+#### Supported Corrections
+
+| Error | Example Input | Repaired Output |
+|-------|--------------|-----------------|
+| Trailing commas | `{"a": 1,}` | `{"a":1}` |
+| Single-quoted strings | `{'name': 'Alice'}` | `{"name":"Alice"}` |
+| Unquoted object keys | `{name: "Alice"}` | `{"name":"Alice"}` |
+| Line comments | `{"a": 1 // note}` | `{"a":1}` |
+| Block comments | `{"a": 1 /* note */}` | `{"a":1}` |
+| Unescaped quotes | `{"msg": "He said "hi""}` | `{"msg":"He said \"hi\""}` |
+| Duplicate keys | `{"k": 1, "k": 2}` | `{"k":2}` |
+
+#### Basic Repair
+
+```go
+import "github.com/shapestone/shape-json/pkg/json"
+
+fixed, err := json.Repair(`{
+    // user config
+    name: 'Alice',
+    bio: "She said "hello" to everyone",
+    tags: ["go", "rust",],
+}`)
+if err != nil {
+    log.Fatal(err) // only if truly unrecoverable
+}
+// fixed is now valid JSON, ready for Parse/Unmarshal
+```
+
+#### Try-Fast-Then-Repair Pattern
+
+Use the fast path normally and only repair on failure — this avoids the overhead of lenient parsing for valid input:
+
+```go
+err := json.Unmarshal(data, &v)
+if err != nil {
+    fixed, repairErr := json.RepairBytes(data)
+    if repairErr != nil {
+        return repairErr // truly broken JSON
+    }
+    err = json.Unmarshal(fixed, &v)
+}
+```
+
+#### Repair with Diagnostics
+
+`RepairWithCorrections` returns a list of every correction applied, useful for logging or alerting on upstream data quality:
+
+```go
+fixed, corrections, err := json.RepairWithCorrections(rawInput)
+if err != nil {
+    return err
+}
+for _, c := range corrections {
+    log.Printf("Fixed %s at line %d: %s", c.Kind, c.Position.Row(), c.Message)
+}
+// Use fixed with Parse, Unmarshal, etc.
+```
+
+Each `Correction` includes:
+- `Kind` — the correction type (e.g., `CorrectionTrailingComma`, `CorrectionUnescapedQuote`)
+- `Position` — line and column in the original input
+- `Original` / `Fixed` — what was in the input vs. what it became
+- `Message` — human-readable description
+
+#### API Reference
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `Repair` | `(string) (string, error)` | Repair JSON string |
+| `RepairBytes` | `([]byte) ([]byte, error)` | Repair JSON bytes (composable with `Unmarshal`) |
+| `RepairWithCorrections` | `(string) (string, []Correction, error)` | Repair with diagnostic output |
 
 ---
 
