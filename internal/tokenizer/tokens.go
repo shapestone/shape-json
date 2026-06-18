@@ -21,4 +21,9 @@ const (
 
 	// Special token
 	TokenEOF = "EOF" // End of file
+
+	// Lenient-mode tokens (not produced by the strict tokenizer)
+	TokenComment      = "Comment"      // // line or /* block */
+	TokenIdentifier   = "Identifier"   // unquoted key: name, age, $id
+	TokenSingleString = "SingleString" // '...' (single-quoted string)
 )
