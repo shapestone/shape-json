@@ -5,6 +5,21 @@ All notable changes to the shape-json project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.3] - 2026-06-18
+
+### Fixed
+- **Unescaped quote recovery now handles multi-byte UTF-8 correctly** — `Token.Offset()` returns a rune index, but the recovery scan used it as a byte index into the input string, causing offset drift when earlier strings contained em-dashes, accented characters, or emoji
+
+## [0.11.2] - 2026-06-18
+
+### Fixed
+- **Lenient string matcher now allows newlines in strings** — the strict string matcher rejected characters < 0x20, which caused unescaped quote recovery to fail when strings contained raw newlines
+
+## [0.11.1] - 2026-06-18
+
+### Changed
+- Added Repair API documentation to README and USER_GUIDE
+
 ## [0.11.0] - 2026-06-18
 
 ### Added
@@ -155,6 +170,10 @@ Copyright © 2020-2025 Shapestone
 - Documentation: https://pkg.go.dev/github.com/shapestone/shape-json
 - Issues: https://github.com/shapestone/shape-json/issues
 
+[0.11.3]: https://github.com/shapestone/shape-json/releases/tag/v0.11.3
+[0.11.2]: https://github.com/shapestone/shape-json/releases/tag/v0.11.2
+[0.11.1]: https://github.com/shapestone/shape-json/releases/tag/v0.11.1
+[0.11.0]: https://github.com/shapestone/shape-json/releases/tag/v0.11.0
 [0.10.1]: https://github.com/shapestone/shape-json/releases/tag/v0.10.1
 [0.10.0]: https://github.com/shapestone/shape-json/releases/tag/v0.10.0
 [0.9.0]: https://github.com/shapestone/shape-json/releases/tag/v0.9.0
