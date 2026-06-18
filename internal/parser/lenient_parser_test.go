@@ -382,6 +382,48 @@ func TestLenientParser_UnescapedQuotesNotFirstElement(t *testing.T) {
 	}
 }
 
+func TestLenientParser_UnescapedQuotesWithMultibyteUTF8(t *testing.T) {
+	// Regression: Token.Offset() returns a rune index, not a byte offset.
+	// Multi-byte characters (em-dash U+2014 = 3 bytes, 1 rune) in earlier
+	// strings caused the unescaped-quote recovery to misindex into the input.
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			"em-dash in first element",
+			"{\"items\":[{\"name\":\"A\",\"evidence\":\"route.ts — handler\",\"register\":\"b\"},{\"name\":\"B\",\"definition\":\"a room (e.g. \"Deluxe King\") scoped.\",\"register\":\"b\"}]}",
+		},
+		{
+			"em-dash and backtick in first element",
+			"{\"items\":[{\"name\":\"A\",\"evidence\":\"route.ts — `GET`\",\"register\":\"b\"},{\"name\":\"B\",\"definition\":\"a room (e.g. \"Deluxe King\") scoped.\",\"register\":\"b\"}]}",
+		},
+		{
+			"multiple multi-byte chars before defective string",
+			"{\"items\":[{\"desc\":\"éàü — café\"},{\"def\":\"say \"hello\" please\"}]}",
+		},
+		{
+			"emoji before defective string",
+			"{\"items\":[{\"icon\":\"\U0001F680\U0001F30D\"},{\"def\":\"say \"hello\" ok\"}]}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, corrections := parseLenient(t, tt.input)
+			hasUnescaped := false
+			for _, c := range corrections {
+				if c.Kind == lenient.CorrectionUnescapedQuote {
+					hasUnescaped = true
+				}
+			}
+			if !hasUnescaped {
+				t.Error("expected UnescapedQuote correction")
+			}
+		})
+	}
+}
+
 func TestLenientParser_NewlinesInStrings(t *testing.T) {
 	input := "{\"msg\":\"line one\\nline two\"}"
 	node, _ := parseLenient(t, input)
